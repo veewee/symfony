@@ -83,10 +83,63 @@ class QuestionHelperTest extends AbstractQuestionHelperTest
         $question->setMultiselect(true);
 
         $this->assertEquals(array('Superman', 'Batman'), $questionHelper->ask($this->createStreamableInputInterfaceMock($inputStream), $this->createOutputInterface(), $question));
+    }
 
-        $question = new ChoiceQuestion('What is your favorite superhero?', $heroes, 0);
-        // We are supposed to get the default value since we are not in interactive mode
-        $this->assertEquals('Superman', $questionHelper->ask($this->createStreamableInputInterfaceMock($inputStream, true), $this->createOutputInterface(), $question));
+    public function testAskChoicesNonInteractive()
+    {
+        $questionHelper = new QuestionHelper();
+
+        $helperSet = new HelperSet(array(new FormatterHelper()));
+        $questionHelper->setHelperSet($helperSet);
+
+        $heroes = array('Superman', 'Batman', 'Spiderman');
+
+        $inputStream = $this->getInputStream("\n1\n  1  \nFabien\n1\nFabien\n1\n0,2\n 0 , 2  \n\n\n");
+
+        $question = new ChoiceQuestion('What is your favorite superhero?', $heroes, '0');
+        $this->assertEquals('Superman', $questionHelper->ask($this->createStreamableInputInterfaceMock($inputStream, false), $this->createOutputInterface(), $question));
+
+        $question = new ChoiceQuestion('What is your favorite superhero?', $heroes, 'Batman');
+        $this->assertEquals('Batman', $questionHelper->ask($this->createStreamableInputInterfaceMock($inputStream, false), $this->createOutputInterface(), $question));
+
+        $question = new ChoiceQuestion('What is your favorite superhero?', $heroes,  null);
+        $this->assertEquals(null, $questionHelper->ask($this->createStreamableInputInterfaceMock($inputStream, false), $this->createOutputInterface(), $question));
+
+        $question = new ChoiceQuestion('What is your favorite superhero?', $heroes, '0');
+        $question->setValidator(null);
+        $this->assertEquals('0', $questionHelper->ask($this->createStreamableInputInterfaceMock($inputStream, false), $this->createOutputInterface(), $question));
+
+        try {
+            $question = new ChoiceQuestion('What is your favorite superhero?', $heroes,  null);
+            $questionHelper->ask($this->createStreamableInputInterfaceMock($inputStream, false), $this->createOutputInterface(), $question);
+        } catch (\InvalidArgumentException $e) {
+            $this->assertEquals('Value "" is invalid', $e->getMessage());
+        }
+
+        $question = new ChoiceQuestion('Who are your favorite superheros?', $heroes,  '0, 1');
+        $question->setMultiselect(true);
+        $this->assertEquals(array('Superman', 'Batman'), $questionHelper->ask($this->createStreamableInputInterfaceMock($inputStream, false), $this->createOutputInterface(), $question));
+
+        $question = new ChoiceQuestion('Who are your favorite superheros?', $heroes,  '0, 1');
+        $question->setMultiselect(true);
+        $question->setValidator(null);
+        $this->assertEquals('0, 1', $questionHelper->ask($this->createStreamableInputInterfaceMock($inputStream, false), $this->createOutputInterface(), $question));
+
+        $question = new ChoiceQuestion('Who are your favorite superheros?', $heroes,  '0, Batman');
+        $question->setMultiselect(true);
+        $this->assertEquals(array('Superman', 'Batman'), $questionHelper->ask($this->createStreamableInputInterfaceMock($inputStream, false), $this->createOutputInterface(), $question));
+
+        $question = new ChoiceQuestion('Who are your favorite superheros?', $heroes,  null);
+        $question->setMultiselect(true);
+        $this->assertEquals(array(), $questionHelper->ask($this->createStreamableInputInterfaceMock($inputStream, false), $this->createOutputInterface(), $question));
+
+        try {
+            $question = new ChoiceQuestion('Who are your favorite superheros?', $heroes,  '');
+            $question->setMultiselect(true);
+            $questionHelper->ask($this->createStreamableInputInterfaceMock($inputStream, false), $this->createOutputInterface(), $question);
+        } catch (\InvalidArgumentException $e) {
+            $this->assertEquals('Value "" is invalid', $e->getMessage());
+        }
     }
 
     public function testAsk()
